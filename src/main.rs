@@ -47,11 +47,15 @@ fn handle_client(stream: TcpStream) {
                     break; // EOF so break
                 }
                 println!("[{}] Message <{}>: ...", client_name, n);
-            },
+            }
         };
 
-        let _ = bstream.write(&buffer).unwrap();
-        let _ = bstream.flush();
+        let _ = match bstream.write(&buffer) {
+            Err(e) => panic!("[Error] Server > Client: {}", e),
+            Ok(_) => {
+                let _ = bstream.flush();
+            }
+        };
     }
 }
 
