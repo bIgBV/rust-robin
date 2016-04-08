@@ -21,6 +21,10 @@ fn handle_client (mut stream: TcpStream) {
             },
         };
 
+        // Nope doesn't work.. something about the Format trait
+        // not being implemented :(
+        // println!("GOT A MESSAGE: {}", buf);
+
         // write it back
         match stream.write(&buf) {
             Err(_) => break,
