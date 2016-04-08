@@ -1,35 +1,57 @@
+extern crate bufstream;
+extern crate rand;
+
+/*
+    The purpose of this module is to alleviate
+    imports of many common I/O traits by adding
+    a glob import to the top of I/O heavy modules.
+    http://doc.rust-lang.org/std/io/prelude/
+*/
+
+use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
 
-use std::io::Read;
-use std::io::Write;
+/*
+    This crate provides a BufStream type which
+    provides buffering of both the reading and
+    writing halves of a Read + Write type.
+    http://doc.rust-lang.org/std/io/prelude/
+*/
+use bufstream::BufStream;
 
-fn handle_client (mut stream: TcpStream) {
-    let mut buf;
+/*
+    <Experimental>
+    http://doc.rust-lang.org/0.12.0/std/io/struct.BufferedStream.html
+*/
+// use std::io::BufferedStream
+
+use rand::Rng;
+
+fn handle_client(stream: TcpStream) {
+    let mut bstream = BufStream::new(stream);
+    let mut buffer;
+    let client_number = rand::thread_rng().gen_range(1, 101);
+    let client_name = format!("Client-{}", client_number);
+
+    println!("Connected to {}...", client_name);
 
     // Read value into buffer from stream
     loop {
         // Clear out buffer on each iteration
-        buf = [0; 512];
-        let _ = match stream.read(&mut buf) {
-            Err(e) => panic!("Got an error: {}", e),
-            Ok(m) => {
-                if m == 0 {
-                    // EOF so break
-                    break;
+        buffer = [0; 512];
+
+        let _ = match bstream.read(&mut buffer) {
+            Err(e) => panic!("[Error] Client > Server: {}", e),
+            Ok(n) => {
+                if n == 0 {
+                    break; // EOF so break
                 }
-                m
+                println!("[{}] Message <{}>: ...", client_name, n);
             },
         };
 
-        // Nope doesn't work.. something about the Format trait
-        // not being implemented :(
-        // println!("GOT A MESSAGE: {}", buf);
-
-        // write it back
-        match stream.write(&buf) {
-            Err(_) => break,
-            Ok(_) => continue,
-        }
+        let _ = bstream.write(&buffer).unwrap();
+        let _ = bstream.flush();
     }
 }
 
