@@ -10,6 +10,7 @@ extern crate rand;
 
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
+use std::thread;
 
 /*
     This crate provides a BufStream type which
@@ -46,7 +47,8 @@ fn handle_client(stream: TcpStream) {
                 if n == 0 {
                     break; // EOF so break
                 }
-                println!("[{}] Message <{}>: ...", client_name, n);
+                // println!("[{}] Message <{}>: ...", client_name, bstream.read_to_string(&mut temp_str).unwrap());
+                n
             }
         };
 
@@ -66,7 +68,10 @@ fn main() {
         match stream {
             Err(e) => { println!("Failed: {}", e) }
             Ok(stream) => {
-                handle_client(stream)
+                // Spwan a new thread for each connection
+                thread::spawn(|| {
+                    handle_client(stream)
+                });
             }
        }
     }
