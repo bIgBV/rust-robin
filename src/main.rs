@@ -54,6 +54,8 @@ fn handle_client(stream: TcpStream) {
 
         // Do not need the number of bytes being written right now.
         io::stdout().write(&buffer.clone()).unwrap();
+        // This prints the actual contents; ascii char codes
+        // println!("{:?}", &buffer.clone());
 
         let _ = match bstream.write(&buffer) {
             Err(e) => panic!("[Error] Server > Client: {}", e),
