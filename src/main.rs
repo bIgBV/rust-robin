@@ -9,6 +9,7 @@ extern crate rand;
 */
 
 use std::io::prelude::*;
+use std::io;
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
@@ -39,7 +40,7 @@ fn handle_client(stream: TcpStream) {
     // Read value into buffer from stream
     loop {
         // Clear out buffer on each iteration
-        buffer = [0; 512];
+        buffer = vec![0; 512];
 
         let _ = match bstream.read(&mut buffer) {
             Err(e) => panic!("[Error] Client > Server: {}", e),
@@ -47,10 +48,12 @@ fn handle_client(stream: TcpStream) {
                 if n == 0 {
                     break; // EOF so break
                 }
-                // println!("[{}] Message <{}>: ...", client_name, bstream.read_to_string(&mut temp_str).unwrap());
                 n
             }
         };
+
+        // Do not need the number of bytes being written right now.
+        io::stdout().write(&buffer.clone()).unwrap();
 
         let _ = match bstream.write(&buffer) {
             Err(e) => panic!("[Error] Server > Client: {}", e),
