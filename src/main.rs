@@ -32,8 +32,10 @@ use rand::Rng;
 fn handle_client(stream: TcpStream) {
     let mut bstream = BufStream::new(stream);
     let mut buffer;
+    let mut upstream_buffer;
     let client_number = rand::thread_rng().gen_range(1, 101);
     let client_name = format!("Client-{}", client_number);
+    let mut upstream = TcpStream::connect("127.0.0.1:8889").unwrap();
 
     println!("Connected to {}...", client_name);
 
@@ -41,6 +43,7 @@ fn handle_client(stream: TcpStream) {
     loop {
         // Clear out buffer on each iteration
         buffer = vec![0; 512];
+        upstream_buffer = vec![0; 512];
 
         let _ = match bstream.read(&mut buffer) {
             Err(e) => panic!("[Error] Client > Server: {}", e),
@@ -54,10 +57,17 @@ fn handle_client(stream: TcpStream) {
 
         // Do not need the number of bytes being written right now.
         io::stdout().write(&buffer.clone()).unwrap();
-        // This prints the actual contents; ascii char codes
-        // println!("{:?}", &buffer.clone());
 
-        let _ = match bstream.write(&buffer) {
+        let _ = match upstream.write(&buffer.clone()) {
+            Err(e) => panic!("[Error] error writing to upstream: {}", e),
+            Ok(n) => {
+                n
+            }
+        };
+
+        let _ = upstream.read(&mut upstream_buffer);
+
+        let _ = match bstream.write(&upstream_buffer) {
             Err(e) => panic!("[Error] Server > Client: {}", e),
             Ok(_) => {
                 let _ = bstream.flush();
@@ -68,12 +78,14 @@ fn handle_client(stream: TcpStream) {
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8888").unwrap();
+
     println!("Listening on localhost:8888");
+
     for stream in listener.incoming() {
         match stream {
             Err(e) => { println!("Failed: {}", e) }
             Ok(stream) => {
-                // Spwan a new thread for each connection
+                // Spawn a new thread for each connection
                 thread::spawn(|| {
                     handle_client(stream)
                 });
