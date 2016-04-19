@@ -45,7 +45,7 @@ fn handle_client(stream: TcpStream) {
         buffer = vec![0; 512];
         upstream_buffer = vec![0; 512];
 
-        let _ = match bstream.read(&mut buffer) {
+        let read_bytes = match bstream.read(&mut buffer) {
             Err(e) => panic!("[Error] Client > Server: {}", e),
             Ok(n) => {
                 if n == 0 {
@@ -55,19 +55,25 @@ fn handle_client(stream: TcpStream) {
             }
         };
 
-        // Do not need the number of bytes being written right now.
-        io::stdout().write(&buffer.clone()).unwrap();
+        let data = &buffer[..read_bytes];
 
-        let _ = match upstream.write(&buffer.clone()) {
+        // Do not need the number of bytes being written right now.
+        io::stdout().write(&data.clone()).unwrap();
+
+        // write data to upstream
+        let _ = match upstream.write(&data.clone()) {
             Err(e) => panic!("[Error] error writing to upstream: {}", e),
             Ok(n) => {
                 n
             }
         };
 
-        let _ = upstream.read(&mut upstream_buffer);
+        let write_bytes = match upstream.read(&mut upstream_buffer) {
+            Err(e) => panic!("[Error] Error reading from upstream: {}", e),
+            Ok(n) => n
+        };
 
-        let _ = match bstream.write(&upstream_buffer) {
+        let _ = match bstream.write(&upstream_buffer[..write_bytes]) {
             Err(e) => panic!("[Error] Server > Client: {}", e),
             Ok(_) => {
                 let _ = bstream.flush();
